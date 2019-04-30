@@ -47,10 +47,9 @@ func NewRouter() *mux.Router {
 func Index(w http.ResponseWriter, r *http.Request) {
 	result := GetSecrets()
 
-	resultJson, err := json.Marshal(result)
+	resultJSON, err := json.Marshal(result)
 	handleErr(err)
-	// fmt.Println(string(b))
-	fmt.Fprintf(w, string(resultJson))
+	fmt.Fprintf(w, string(resultJSON))
 }
 
 var routes = Routes{

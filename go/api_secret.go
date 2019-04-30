@@ -11,37 +11,52 @@ package swagger
 
 import (
 	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 	"time"
 )
 
+// AddSecret comment like this?
 func AddSecret(w http.ResponseWriter, r *http.Request) {
+
 	secret := Secret{}
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&secret)
 	if err != nil {
 		panic(err)
 	}
+	// fmt.Println(secret.RemainingViews == 0)
 	data := []byte(secret.SecretText)
-	hash := md5.New().Sum(data)
+	hash := hex.EncodeToString(md5.New().Sum(data)) //generate hash for secret
 	createdAt := time.Now()
-	expiresAt := time.Now().AddDate(0, 0, 1)
-	remainingViews := 10
+	expiresAt := time.Now().AddDate(0, 0, 1) // The secret will be expired after one day.
+	remainingViews := 10                     // 10 times for default
+	//assign value for secret struct
 	secret.Hash = string(hash)
 	secret.CreatedAt = createdAt
 	secret.ExpiresAt = expiresAt
-	secret.RemainingViews = int32(remainingViews)
+	secret.RemainingViews = remainingViews
 	// w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	rs, _ := json.Marshal(secret)
-	log.Printf(string(rs))
-	Create()
-	// w.WriteHeader(http.StatusOK)
+	// rs, _ := json.Marshal(secret)
+	return_hash := Create(secret)
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, string(return_hash))
 
 }
 
 func GetSecretByHash(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
+	// hash, ok := r.URL.Query()["k"]
+	hash := r.URL.Path[11:]
+	secretText := Show(hash)
+	if secretText == "not found" {
+		fmt.Fprintf(w, "Secret is not found")
+		return
+	}
+
+	fmt.Fprintf(w, secretText)
 }

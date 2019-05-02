@@ -37,7 +37,7 @@ type Secret struct {
 	ExpiresAt time.Time `json:"expiresAt,omitempty"`
 
 	// How many times the secret can be viewed
-	RemainingViews int `json:"remainingViews,omitempty"`
+	RemainingViews int32 `json:"remainingViews,omitempty"`
 }
 
 type Secrets []Secret
@@ -55,13 +55,13 @@ func ConnectDB() {
 	db = conn
 }
 
-func Create(sc Secret) (rs string) {
+func Create(sc Secret) (rs Secret) {
 	createQuery := `INSERT INTO secret(hash, secrettext, createdat, expiresat, remainingviews) VALUES ($1, $2, $3, $4, $5) RETURNING hash;`
 	hash := string("")
 	fmt.Println(sc)
 	err := db.QueryRow(createQuery, sc.Hash, sc.SecretText, sc.CreatedAt, sc.ExpiresAt, sc.RemainingViews).Scan(&hash)
 	handleErr(err)
-	return hash
+	return sc
 }
 
 func GetSecrets() Secrets {
@@ -102,7 +102,7 @@ func GetSecrets() Secrets {
 
 func Show(hash string) (rs string) {
 	secret := Secret{}
-	selectQuery := "SELECT hash, secrettext, createdat, expiresat, remainingviews FROM secret WHERE hash = $1 AND expiresat > $2 AND remainingviews > 0 ;"
+	selectQuery := "SELECT hash, secrettext, createdat, expiresat, remainingviews FROM secret WHERE hash = $1 AND (expiresat > $2 OR expiresat = createdat) AND remainingviews > 0 ;"
 	err := db.QueryRow(selectQuery, hash, time.Now()).Scan(&secret.Hash, &secret.SecretText, &secret.CreatedAt, &secret.ExpiresAt, &secret.RemainingViews)
 	if err != nil {
 		return string("not found")
